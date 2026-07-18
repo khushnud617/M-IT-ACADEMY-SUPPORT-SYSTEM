@@ -1,0 +1,1495 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-IT Pro Management System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        .sidebar-active { background-color: #2563eb !important; color: white !important; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+
+    <!-- Maxsus Bildirishnomalar Tizimi (Alert o'rniga) -->
+    <div id="toastNotification" class="fixed top-5 right-5 z-[9999] transform translate-x-full transition-all duration-300 ease-out flex items-center p-4 rounded-xl shadow-2xl border hidden">
+        <div class="mr-3 text-lg" id="toastIcon"></div>
+        <div class="text-xs font-semibold" id="toastMessage"></div>
+    </div>
+
+    <!-- 1. LOGIN EKRANI -->
+    <div id="loginPage" class="flex items-center justify-center min-h-screen p-4 bg-slate-950">
+        <div class="bg-slate-900 p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-800">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-layer-group text-2xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-bold tracking-tight text-white">M-IT Support & LMS</h2>
+                <p class="text-slate-400 text-sm mt-1">Tizimga kirish uchun ma'lumotlarni kiriting</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Login (Foydalanuvchi nomi)</label>
+                    <input type="text" id="loginUser" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-600 animate-none" placeholder="Username">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Parol</label>
+                    <input type="password" id="loginPass" class="w-full px-4 py-3 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-white placeholder-slate-600" placeholder="••••••••">
+                </div>
+                <button onclick="handleLogin()" class="w-full py-3 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl transition duration-200 mt-2 shadow-lg shadow-blue-600/30">
+                    Kirish <i class="fa-solid fa-arrow-right-to-bracket ml-2"></i>
+                </button>
+            </div>
+            <p id="loginError" class="text-red-400 text-sm text-center mt-4 hidden"><i class="fa-solid fa-circle-exclamation mr-1"></i> Login yoki parol xato!</p>
+        </div>
+    </div>
+
+    <!-- MAIN APP WRAPPER -->
+    <div id="appContainer" class="hidden min-h-screen flex flex-col md:flex-row">
+        
+        <!-- MOBIL NAVIGATSIYA BAR -->
+        <div class="md:hidden bg-slate-900 border-b border-slate-800 px-4 py-3 flex justify-between items-center sticky top-0 z-50">
+            <span class="font-bold text-blue-500 flex items-center gap-2">
+                <i class="fa-solid fa-layer-group"></i> M-IT Panel
+            </span>
+            <div class="flex items-center gap-3">
+                <span id="roleBadgeMobile" class="text-[10px] px-2 py-0.5 rounded-full font-bold"></span>
+                <button onclick="toggleMobileSidebar()" class="text-slate-300 focus:outline-none text-xl">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. SIDEBAR (NAVIGATSIYA) -->
+        <aside id="sidebar" class="hidden md:flex flex-col w-full md:w-64 bg-slate-900 border-r border-slate-800 shrink-0 sticky top-0 h-screen z-40 p-4 justify-between transition-all duration-300">
+            <div class="space-y-6">
+                <!-- Logo -->
+                <div class="hidden md:flex items-center gap-3 px-2 py-3 border-b border-slate-800">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-graduation-cap text-white text-sm"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-white text-sm">M-IT Academy</h1>
+                        <span id="roleBadge" class="text-[10px] text-blue-400 font-medium">Boshliq</span>
+                    </div>
+                </div>
+
+                <!-- Profil Haqida Qisqa (O'qituvchi, Support va Volontyor uchun) -->
+                <div id="roleDescriptionCard" class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-xs hidden">
+                    <span class="text-[10px] text-blue-400 font-semibold uppercase tracking-wider block mb-1">Eslatma</span>
+                    <p id="roleDescriptionText" class="text-slate-400 leading-relaxed"></p>
+                </div>
+
+                <!-- Menyular -->
+                <nav class="space-y-1.5" id="navigationMenu">
+                    <!-- Dinamik ravishda rollarga qarab menyular joylanadi -->
+                </nav>
+            </div>
+
+            <!-- Pastki Qism -->
+            <div class="pt-4 border-t border-slate-800 space-y-3">
+                <div class="flex items-center gap-3 px-2">
+                    <div class="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center text-xs font-bold text-slate-300" id="avatarLetter">
+                        U
+                    </div>
+                    <div class="truncate">
+                        <p class="text-xs font-semibold text-white truncate" id="currentUserDisplay">User Name</p>
+                        <p class="text-[10px] text-slate-500 truncate" id="currentUserRole">Rol</p>
+                    </div>
+                </div>
+                <button onclick="handleLogout()" class="w-full py-2 bg-slate-800 hover:bg-red-600/20 hover:text-red-400 text-xs font-semibold rounded-xl transition duration-150 flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-power-off"></i> Chiqish
+                </button>
+            </div>
+        </aside>
+
+        <!-- 3. ASOSIY KONTENT SEKTORI -->
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full space-y-6">
+            
+            <!-- A) DASHBOARD TAB -->
+            <div id="tab-dashboard" class="tab-content space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white">Dashboard</h2>
+                        <p class="text-xs text-slate-400">Jonli nazorat va markazdagi faollik ko'rsatkichi</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Chap/Markaziy qism: Faqat Kuzatuv -->
+                    <div class="lg:col-span-2 space-y-6">
+                        
+                        <!-- JONLI KUZATUV (BOSS PANELDAGI JONLI MONITOR) -->
+                        <div id="liveMonitorSection" class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold text-white flex items-center gap-2">
+                                    <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+                                    Jonli Kuzatuv (Support Monitor)
+                                </h3>
+                                <span class="text-xs bg-slate-950 px-3 py-1 rounded-full text-slate-400" id="activeStaffCount">0 faol xodim</span>
+                            </div>
+                            <div class="overflow-x-auto custom-scrollbar">
+                                <table class="w-full text-left border-collapse text-sm">
+                                    <thead>
+                                        <tr class="border-b border-slate-800 text-slate-400">
+                                            <th class="pb-3 font-semibold">Xodim</th>
+                                            <th class="pb-3 font-semibold">Rol</th>
+                                            <th class="pb-3 font-semibold">Hozirgi Holati</th>
+                                            <th class="pb-3 font-semibold">Oxirgi yangilanish</th>
+                                            <th class="pb-3 font-semibold text-center">KPI Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="liveStatusTable" class="divide-y divide-slate-800/50">
+                                        <!-- Dinamik ma'lumotlar -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- O'ng qism: Jonli Chat (Hamma uchun doimo oson foydalanishda) -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl flex flex-col h-[440px]">
+                        <div class="p-3 border-b border-slate-800 flex flex-col gap-2 bg-slate-900/50 rounded-t-2xl">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-bold flex items-center text-xs text-white"><i class="fa-solid fa-comments text-blue-500 mr-1.5"></i> Jonli Chat</h3>
+                                <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+                            </div>
+                            <!-- Chat kanallari boshqaruv tugmalari -->
+                            <div id="chatChannelSelector" class="flex gap-1 bg-slate-950 p-1 rounded-xl">
+                                <!-- Dinamik ravishda rollarga ko'ra yuklanadi -->
+                            </div>
+                        </div>
+                        
+                        <div id="chatMessages" class="flex-1 p-3 overflow-y-auto space-y-3 custom-scrollbar text-xs">
+                            <!-- Xabarlar shu yerda chiqadi -->
+                        </div>
+                        
+                        <div class="p-3 border-t border-slate-800 bg-slate-950/40 rounded-b-2xl">
+                            <div id="imagePreviewContainer" class="hidden mb-2 p-2 bg-slate-900 rounded-lg relative">
+                                <img id="imagePreview" src="" class="h-16 w-auto rounded object-cover">
+                                <button onclick="clearImagePreview()" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <label class="cursor-pointer p-2 bg-slate-800 hover:bg-slate-700 rounded-xl transition text-slate-300">
+                                    <i class="fa-solid fa-image"></i>
+                                    <input type="file" id="chatFileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
+                                </label>
+                                <input type="text" id="chatInput" placeholder="Xabar yo'llang..." class="flex-1 bg-slate-800 border border-slate-800 text-xs rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-500 text-white">
+                                <button onclick="sendChatMessage()" class="p-2.5 bg-blue-600 hover:bg-blue-700 rounded-xl text-white transition">
+                                    <i class="fa-solid fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A2) DARSLAR JADVALI TAB -->
+            <div id="tab-schedule" class="tab-content space-y-6 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white">Darslar Jadvali</h2>
+                        <p class="text-xs text-slate-400">Darslar jadvali hamda guruhlarga biriktirilgan support xodimlari</p>
+                    </div>
+                </div>
+
+                <!-- DARSLARGA BIRIKTIRILGAN SUPPORTLAR JADVALI -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center flex-wrap gap-2">
+                        <h3 class="font-bold text-white flex items-center gap-2">
+                            <i class="fa-solid fa-calendar-days text-blue-500"></i>
+                            Darslar va Supportlar Ro'yxati
+                        </h3>
+                        <div id="bossScheduleAction" class="hidden">
+                            <button onclick="toggleScheduleForm()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-xs font-semibold rounded-lg transition">
+                                + Jadvalga biriktirish
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Jadval yaratish formasi (Faqat Boshliq uchun) -->
+                    <div id="scheduleForm" class="hidden bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">Yangi darsga biriktirish</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                            <input type="text" id="schedClass" placeholder="Guruh / Xona" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none text-white">
+                            <select id="schedTeacher" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none text-slate-300"></select>
+                            <select id="schedSupport" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none text-slate-300"></select>
+                            <input type="text" id="schedTime" placeholder="Vaqti (Masalan: 14:00 - 16:00)" class="px-3 py-2 bg-slate-900 border border-slate-800 rounded-lg text-xs focus:outline-none text-white">
+                        </div>
+                        <div class="flex justify-end gap-2 text-xs">
+                            <button onclick="toggleScheduleForm()" class="px-3 py-1.5 bg-slate-800 rounded-lg">Bekor qilish</button>
+                            <button onclick="saveSchedule()" class="px-3 py-1.5 bg-blue-600 rounded-lg font-bold">Saqlash</button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400">
+                                    <th class="pb-3 font-semibold">Guruh / Xona</th>
+                                    <th class="pb-3 font-semibold">Asosiy O'qituvchi</th>
+                                    <th class="pb-3 font-semibold">Biriktirilgan Support</th>
+                                    <th class="pb-3 font-semibold">Dars Vaqti</th>
+                                    <th class="pb-3 font-semibold text-center" id="schedActionHead">Amal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBody" class="divide-y divide-slate-800/50">
+                                <!-- Dinamik ravishda to'ldiriladi -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- B) STATUSHOLDER TAB (Support va Volontyorlar uchun) -->
+            <div id="tab-status-control" class="tab-content space-y-6 hidden">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Hozirgi holatingizni yangilang</h2>
+                        <p class="text-xs text-slate-400">Sizning joriy ishingiz real vaqt rejimida boshliq panelida namoyon bo'ladi</p>
+                    </div>
+
+                    <!-- Tayyor tugmalar -->
+                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        <button onclick="changeStatus('Obed qilyapman')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-utensils text-amber-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Obed qilyapman</span>
+                        </button>
+                        <button onclick="changeStatus('Xona tozalayabman')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-broom text-cyan-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Xona tozalayabman</span>
+                        </button>
+                        <button onclick="changeStatus('Dars qilyapman')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-book-open text-blue-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Dars qilyapman</span>
+                        </button>
+                        <button onclick="changeStatus('Darsim bolyabdi')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-chalkboard text-purple-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Darsim bo'lyapti</span>
+                        </button>
+                        <button onclick="changeStatus('Dars otyabman')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-graduation-cap text-emerald-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Dars o'tyapman</span>
+                        </button>
+                        <button onclick="changeStatus('Tanaffusda')" class="flex items-center gap-3 p-3 rounded-xl border border-slate-800 bg-slate-950 hover:bg-slate-800/50 transition text-left">
+                            <i class="fa-solid fa-mug-hot text-rose-500 text-lg"></i>
+                            <span class="text-xs font-semibold">Tanaffusda</span>
+                        </button>
+                    </div>
+
+                    <!-- O'zi xohlagan matnni yozish -->
+                    <div class="border-t border-slate-800 pt-6 space-y-3">
+                        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">O'zingiz xohlagan maxsus statusni kiriting</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="customStatusInput" placeholder="Masalan: Tadbirda qatnashyapman..." class="flex-1 px-4 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 text-white">
+                            <button onclick="submitCustomStatus()" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-xs font-bold rounded-xl transition">
+                                Statusni o'rnatish
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex justify-between items-center">
+                        <span class="text-xs text-slate-400">Sizning hozirgi holatingiz:</span>
+                        <span id="currentStatusBadge" class="text-xs font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/25 px-3 py-1 rounded-full">Kutilmoqda...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- C) VAFAZILAR & TOPSHIRIQLAR TAB -->
+            <div id="tab-tasks" class="tab-content space-y-6 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white">Topsiriqlar & Vazifalar</h2>
+                        <p class="text-xs text-slate-400">Kunlik vazifalar hamda jamoaviy va maqsadli topshiriqlar bilan ishlash</p>
+                    </div>
+                </div>
+
+                <!-- TOPSHIRIQ YUBORISH (BOSHLIQ VA O'QITUVCHIGA RUXSAT ETILADI) -->
+                <div id="assignTaskModule" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Target Topsiriq -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                        <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-paper-plane text-indigo-500"></i> Tezkor topsiriq yuborish</h3>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Kimga yuboriladi?</label>
+                                <select id="taskTarget" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-slate-300"></select>
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Topsiriq mazmuni</label>
+                                <textarea id="taskContent" rows="3" placeholder="Masalan: 3-xonani kompyuterlarini tekshiring..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-white"></textarea>
+                            </div>
+                            <button onclick="assignTask()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-700 font-bold rounded-lg transition text-xs">Topshiriqni yuborish</button>
+                        </div>
+                    </div>
+
+                    <!-- KUNLIK VAZIFA QO'SHISH (FAQAT BOSHLIQ UCHUN) -->
+                    <div id="dailyTaskCreatorBox" class="hidden bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                        <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-calendar-check text-emerald-500"></i> Kunlik vazifa qo'shish</h3>
+                        <div class="space-y-3 text-xs">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Vazifa sarlavhasi</label>
+                                <input type="text" id="dailyTaskTitle" placeholder="Masalan: Kechki navbatchilik" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-white">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Batafsil tushuntirish</label>
+                                <textarea id="dailyTaskDesc" rows="3" placeholder="Barcha sinf xonalarini tozalash va chiroqlarni o'chirish..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-white"></textarea>
+                            </div>
+                            <button onclick="addDailyTask()" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 font-bold rounded-lg transition text-xs">Kunlik vazifani kiritish</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- VAZIFALAR RO'YXATI -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Kunlik vazifalar -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                        <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-tasks text-emerald-500"></i> Kunlik vazifalar ro'yxati</h3>
+                        <div id="dailyTasksList" class="space-y-3 text-xs">
+                            <!-- Dinamik kunlik vazifalar -->
+                        </div>
+                    </div>
+
+                    <!-- Maxsus/Tezkor topsiriqlar -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                        <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-bolt text-indigo-500"></i> Maxsus topsiriqlar</h3>
+                        <div id="customTasksList" class="space-y-3 text-xs">
+                            <!-- Dinamik maxsus topsiriqlar -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- D) XODIMLAR / JAMOALAR TAB -->
+            <div id="tab-team" class="tab-content space-y-6 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white" id="teamTabHeaderTitle">Jamoamiz a'zolari</h2>
+                        <p class="text-xs text-slate-400" id="teamTabHeaderSubtitle">Xodimlarning katalogi va reyting tizimi</p>
+                    </div>
+                </div>
+
+                <!-- BARCHA SUPPORTLAR VA O'QITUVCHILAR (SUPPORT JAMOASI) -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white" id="teamSectionSubTitle">Jamoa a'zolari</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="teamCardsGrid">
+                        <!-- Xodimlar kartalari shu yerga yuklanadi -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- D2) STAFF MANAGEMENT TAB (FAQAT BOSHLIQ UCHUN) -->
+            <div id="tab-staff-management" class="tab-content space-y-6 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white">Xodimlarni Boshqarish (Login, Parol & Rollar)</h2>
+                        <p class="text-xs text-slate-400">Tizimdagi barcha xodimlarning ma'lumotlarini tahrirlash, login va parollarini boshqarish</p>
+                    </div>
+                </div>
+
+                <!-- YANGI FOYDALANUVChI QO'SHISH BOLIMI -->
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white text-md flex items-center gap-2"><i class="fa-solid fa-user-plus text-blue-500"></i> Yangi a'zo qo'shish</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Ism Familiya</label>
+                            <input type="text" id="newRealName" placeholder="Masalan: Sardor Komilov" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Login (Foydalanuvchi nomi)</label>
+                            <input type="text" id="newUsername" placeholder="Masalan: sardor_mit" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Parol</label>
+                            <input type="text" id="newPassword" placeholder="Kamida 3-ta belgi" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none text-white">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Lavozim / Rol</label>
+                            <select id="newRole" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-800 rounded-xl focus:outline-none text-slate-300">
+                                <option value="support">Support Teacher</option>
+                                <option value="teacher">O'qituvchi</option>
+                                <option value="volunteer">Volontyor</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end pt-2">
+                        <button onclick="createUser()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 font-bold rounded-xl text-xs transition">
+                            Tizimga yangi a'zo qo'shish
+                        </button>
+                    </div>
+                </div>
+
+                <!-- BARCHA HODIMLARNING RO'YXATI (TAHRIRLASH IMKONI BILAN) -->
+                <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-users-gear text-indigo-500"></i> Mavjud xodimlar ro'yxati va parollari</h3>
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-slate-400 uppercase tracking-wider">
+                                    <th class="pb-3 font-semibold px-2">Ism Familiya</th>
+                                    <th class="pb-3 font-semibold px-2">Login</th>
+                                    <th class="pb-3 font-semibold px-2">Parol</th>
+                                    <th class="pb-3 font-semibold px-2">Rol (Lavozimi)</th>
+                                    <th class="pb-3 font-semibold text-center px-2">Amallar</th>
+                                </tr>
+                            </thead>
+                            <tbody id="managementUsersTable" class="divide-y divide-slate-800/50">
+                                <!-- Dinamik ravishda har bir xodim qatorlari chiqadi -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- E) MUROJAAT / SHIKOYATLAR TAB (O'QITUVCHIdan BOSHLIQQAgacha) -->
+            <div id="tab-complaints" class="tab-content space-y-6 hidden">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-xl md:text-2xl font-bold text-white">Murojaatlar & Shikoyatlar</h2>
+                        <p class="text-xs text-slate-400">O'qituvchi va boshliq o'rtasidagi to'g'ridan-to'g'ri bog'liqlik kanali</p>
+                    </div>
+                </div>
+
+                <!-- SHIKOYAT YUBORISH (FAQAT O'QITUVCHILAR UCHUN) -->
+                <div id="sendComplaintBox" class="hidden bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-bullhorn text-red-500"></i> Boshliqqa murojaat yoki shikoyat yo'llash</h3>
+                    <p class="text-xs text-slate-400">Yozgan shikoyatingiz faqatgina boshliqning maxsus panelida ko'rinadi, boshqa xodimlar uni ko'ra olmaydi.</p>
+                    <div class="space-y-3 text-xs">
+                        <textarea id="complaintText" rows="4" placeholder="Masalan: 4-xonadagi kompyuterlar juda sekin ishlayapti, texnik yordam kerak..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-white"></textarea>
+                        <button onclick="sendComplaint()" class="px-5 py-2 bg-red-600 hover:bg-red-700 font-bold rounded-lg transition">Murojaatni yuborish</button>
+                    </div>
+                </div>
+
+                <!-- KELGAN MUROJAATLAR RO'YXATI (FAQAT BOSHLIQ UCHUN) -->
+                <div id="receivedComplaintsBox" class="hidden bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+                    <h3 class="font-bold text-white flex items-center gap-2"><i class="fa-solid fa-inbox text-blue-500"></i> Kelgan murojaatlar ro'yxati</h3>
+                    <div id="complaintsListContainer" class="space-y-3 text-xs">
+                        <!-- Dinamik shikoyat xabarlari -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- F) SOZLAMALAR TAB -->
+            <div id="tab-settings" class="tab-content space-y-6 hidden">
+                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl space-y-6">
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Sozlamalar</h2>
+                        <p class="text-xs text-slate-400">Tizimdagi shaxsiy profilingiz hamda xavfsizlik sozlamalari</p>
+                    </div>
+
+                    <div class="max-w-md space-y-4 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Ism familiyangiz</label>
+                            <input type="text" id="settingsName" class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-slate-300">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Yangi parol (O'zgartirish uchun)</label>
+                            <input type="password" id="settingsPass" placeholder="O'zgartirmoqchi bo'lsangiz yangisini kiriting..." class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg focus:outline-none text-white">
+                        </div>
+                        <button onclick="saveSettings()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 font-bold rounded-lg transition">
+                            Sozlamalarni saqlash
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- AUDIO NOTIFICATION EFFECT FOR TASKS -->
+    <audio id="pingSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-500.wav" preload="auto"></audio>
+
+    <script>
+        // MOCK DATA SETUP WITH SPEFICIED STAFF AND VOLUNTEERS
+        const DEFAULT_USERS = {
+            "admin": { password: "123", name: "Asoschi (Boshliq)", role: "boss", status: "Boshqaruvda", lastSeen: "Hozir", score: 100 },
+            
+            // Supportlar
+            "hushnudbek": { password: "123", name: "Mirzoulugbekov Hushnudbek", role: "support", status: "Kutilmoqda...", lastSeen: "Hozir", score: 85 },
+            "jahongir": { password: "123", name: "Abdumominov Jahongir", role: "support", status: "Kutilmoqda...", lastSeen: "Hozir", score: 92 },
+            "shohjaxon": { password: "123", name: "Jurayev Shohjaxon", role: "support", status: "Kutilmoqda...", lastSeen: "Hozir", score: 88 },
+            "abdulaziz_t": { password: "123", name: "Turgunov Abdulaziz", role: "support", status: "Kutilmoqda...", lastSeen: "Hozir", score: 90 },
+            "muhammadqodir": { password: "123", name: "Shukurov Muhammadqodir", role: "support", status: "Kutilmoqda...", lastSeen: "Hozir", score: 95 },
+            
+            // O'qituvchilar
+            "muhammadali": { password: "123", name: "mentor muhammadali", role: "teacher", status: "Dars o'tyapman", lastSeen: "Faol", score: 98 },
+            "zebo": { password: "123", name: "Zebo", role: "teacher", status: "Dars o'tyapman", lastSeen: "Faol", score: 96 },
+            "shohruhmirzo": { password: "123", name: "Shohruhmirzo", role: "teacher", status: "Dars o'tyapman", lastSeen: "Faol", score: 97 },
+
+            // Volontyorlar
+            "abdulloh": { password: "123", name: "Abdurashidov Abdulloh", role: "volunteer", status: "Tadbirda", lastSeen: "Faol", score: 90 },
+            "abdulaziz_b": { password: "123", name: "Baxramjanov Abdulaziz", role: "volunteer", status: "Tadbirda", lastSeen: "Faol", score: 92 },
+            "musohon": { password: "123", name: "Sardorbekov Musohon", role: "volunteer", status: "Tadbirda", lastSeen: "Faol", score: 91 }
+        };
+
+        const INITIAL_SCHEDULE = [
+            { id: 1, className: "Frontend G1", teacher: "muhammadali", support: "hushnudbek", time: "14:00 - 16:00" },
+            { id: 2, className: "Backend G3", teacher: "shohruhmirzo", support: "jahongir", time: "16:30 - 18:30" }
+        ];
+
+        // Avval brauzer xotirasidan o'qiymiz
+        let db = JSON.parse(localStorage.getItem('mit_pro_db')) || {};
+
+        // Agar foydalanuvchilar ro'yxati bazada umuman yo'q bo'lsa yoki eski bo'lsa, to'liq tiklaymiz
+        if (!db.users) {
+            db.users = Object.assign({}, DEFAULT_USERS);
+        } else {
+            // Agar baza mavjud bo'lsa, lekin yangi xodimlardan biri (masalan hushnudbek) eski kesh sababli etishmayotgan bo'lsa, ularni qo'shamiz
+            Object.keys(DEFAULT_USERS).forEach(username => {
+                if (!db.users[username]) {
+                    db.users[username] = DEFAULT_USERS[username];
+                }
+            });
+        }
+
+        // Boshqa ob'ektlar tekshiruvi va birlashtirish
+        if (!db.schedule || db.schedule.length === 0) db.schedule = INITIAL_SCHEDULE;
+        
+        // Uch xil chat tizimi uchun migratsiya va sozlash
+        if (!db.chats) {
+            db.chats = {
+                barcha: db.chat || [{ sender: "admin", name: "Asoschi", msg: "Xush kelibsiz! Barcha tizim a'zolari o'z statuslarini muntazam yangilab borishsin.", img: null, time: "09:00" }],
+                teachers: [{ sender: "admin", name: "Asoschi", msg: "Faqat o'qituvchilar uchun maxsus chat.", img: null, time: "09:00" }],
+                supports: [{ sender: "admin", name: "Asoschi", msg: "Faqat supportlar uchun maxsus chat.", img: null, time: "09:00" }]
+            };
+            if (db.chat) delete db.chat;
+        }
+
+        if (!db.tasks) db.tasks = [{ id: 1, creator: "admin", creatorRole: "boss", target: "hushnudbek", content: "3-xonadagi proyektorni tekshiring", doneBy: [] }];
+        if (!db.dailyTasks) db.dailyTasks = [{ id: 101, title: "Kechki sinflarni tekshirish", desc: "Dars yakunida barcha xonalardagi chiroqlar va kompyuterlarni o'chirish.", completedBy: [] }];
+        if (!db.complaints) db.complaints = [{ id: 201, sender: "muhammadali", senderName: "mentor muhammadali", message: "O'quv xonasida marker tugab qoldi.", time: "11:20", status: "unread" }];
+
+        // Sinxronizatsiyadan keyin saqlab qo'yamiz
+        localStorage.setItem('mit_pro_db', JSON.stringify(db));
+
+        let session = null;
+        let selectedImageBase64 = null;
+        let currentChannel = 'barcha'; // Faol chat kanali
+
+        function saveDB() {
+            localStorage.setItem('mit_pro_db', JSON.stringify(db));
+        }
+
+        // TIZIM BAZASINI NOLGA TUSHIRISH (ESKI KESHNI TOZALASH UCHUN)
+        function resetSystemDatabase() {
+            if (confirm("Haqiqatan ham tizim keshini tozalamoqchimisiz? Barcha xodimlar va login parollar boshlang'ich standart (123) holatiga qaytadi.")) {
+                localStorage.removeItem('mit_pro_db');
+                showNotification("Tizim tozalandi! Sahifa qayta yuklanmoqda...", "info");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            }
+        }
+
+        // CUSTOM TOAST NOTIFICATION
+        function showNotification(message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const toastIcon = document.getElementById('toastIcon');
+            const toastMessage = document.getElementById('toastMessage');
+
+            toastMessage.innerText = message;
+
+            if (type === 'success') {
+                toast.className = "fixed top-5 right-5 z-[9999] transform transition-all duration-300 ease-out flex items-center p-4 rounded-xl shadow-2xl border bg-emerald-950 border-emerald-800 text-emerald-400";
+                toastIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+            } else if (type === 'error') {
+                toast.className = "fixed top-5 right-5 z-[9999] transform transition-all duration-300 ease-out flex items-center p-4 rounded-xl shadow-2xl border bg-red-950 border-red-800 text-red-400";
+                toastIcon.innerHTML = `<i class="fa-solid fa-circle-exclamation"></i>`;
+            } else {
+                toast.className = "fixed top-5 right-5 z-[9999] transform transition-all duration-300 ease-out flex items-center p-4 rounded-xl shadow-2xl border bg-blue-950 border-blue-800 text-blue-400";
+                toastIcon.innerHTML = `<i class="fa-solid fa-bell"></i>`;
+            }
+
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 50);
+
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 4000);
+        }
+
+        // LOGIN / LOGOUT LOGIC WITH LOWERCASE SAFETY
+        function handleLogin() {
+            // Login kiritilganda uni avtomatik kichik harflarga o'giramiz (.toLowerCase())
+            const user = document.getElementById('loginUser').value.trim().toLowerCase();
+            const pass = document.getElementById('loginPass').value.trim();
+            
+            if (db.users[user] && db.users[user].password === pass) {
+                // Sessiyani o'rnatish
+                session = { username: user, ...db.users[user] };
+                document.getElementById('loginPage').classList.add('hidden');
+                document.getElementById('appContainer').classList.remove('hidden');
+                setupInterface();
+                document.getElementById('loginError').classList.add('hidden');
+                showNotification(`Xush kelibsiz, ${session.name}!`);
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+                showNotification("Foydalanuvchi nomi yoki parol noto'g'ri!", "error");
+            }
+        }
+
+        function handleLogout() {
+            session = null;
+            document.getElementById('appContainer').classList.add('hidden');
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            showNotification("Tizimdan muvaffaqiyatli chiqdingiz.", "info");
+        }
+
+        // SIDEBAR MENULARINI YARATISH
+        function generateNavigation() {
+            const nav = document.getElementById('navigationMenu');
+            nav.innerHTML = '';
+
+            const links = [
+                { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie', roles: ['boss', 'support', 'teacher', 'volunteer'] },
+                { id: 'schedule', label: 'Darslar Jadvali', icon: 'fa-calendar-days', roles: ['boss', 'support', 'teacher', 'volunteer'] },
+                { id: 'status-control', label: 'Holatni yangilash', icon: 'fa-circle-dot', roles: ['support', 'volunteer'] },
+                { id: 'tasks', label: 'Topshiriqlar', icon: 'fa-list-check', roles: ['boss', 'support', 'teacher', 'volunteer'] },
+                { id: 'team', label: 'Jamoalar', icon: 'fa-users', roles: ['boss', 'support', 'teacher', 'volunteer'] },
+                { id: 'staff-management', label: 'Xodimlarni Boshqarish', icon: 'fa-user-gear', roles: ['boss'] },
+                { id: 'complaints', label: 'Murojaatlar', icon: 'fa-bullhorn', roles: ['boss', 'teacher'] },
+                { id: 'settings', label: 'Sozlamalar', icon: 'fa-gears', roles: ['boss', 'support', 'teacher', 'volunteer'] }
+            ];
+
+            links.forEach(link => {
+                if(link.roles.includes(session.role)) {
+                    nav.innerHTML += `
+                        <button onclick="switchTab('${link.id}')" id="menu-${link.id}" class="w-full flex items-center gap-3 px-3 py-2.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition text-sm font-medium">
+                            <i class="fa-solid ${link.icon} text-md"></i>
+                            <span>${link.label}</span>
+                        </button>
+                    `;
+                }
+            });
+        }
+
+        // TAB SWITCHER
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            const activeTab = document.getElementById(`tab-${tabId}`);
+            if(activeTab) activeTab.classList.remove('hidden');
+
+            document.querySelectorAll('#navigationMenu button').forEach(btn => btn.classList.remove('sidebar-active'));
+            const activeBtn = document.getElementById(`menu-${tabId}`);
+            if(activeBtn) activeBtn.classList.add('sidebar-active');
+
+            if(window.innerWidth < 768) {
+                document.getElementById('sidebar').classList.add('hidden');
+            }
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            if(sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                sidebar.classList.add('flex');
+            } else {
+                sidebar.classList.add('hidden');
+                sidebar.classList.remove('flex');
+            }
+        }
+
+        // TIZIMGA TAYYORLANISh
+        function setupInterface() {
+            // Sessiyani to'g'ridan-to'g'ri yangi ma'lumotlar bilan bog'lash (parol yangilanganda to'g'ri ishlashi uchun)
+            if (db.users[session.username]) {
+                session = { username: session.username, ...db.users[session.username] };
+            }
+
+            document.getElementById('currentUserDisplay').innerText = session.name;
+            
+            let displayRoleName = "Boshliq / Direktor";
+            if(session.role === 'support') displayRoleName = "Yordamchi O'qituvchi";
+            if(session.role === 'teacher') displayRoleName = "Guruh O'qituvchisi";
+            if(session.role === 'volunteer') displayRoleName = "Volontyor Jamoasi";
+
+            document.getElementById('currentUserRole').innerText = displayRoleName;
+            document.getElementById('avatarLetter').innerText = session.name.charAt(0);
+            
+            // Profil qisqa izohi (O'qituvchi, Support va Volontyor uchun mukammal o'zbekcha)
+            const descCard = document.getElementById('roleDescriptionCard');
+            const descText = document.getElementById('roleDescriptionText');
+            if (session.role === 'support') {
+                descCard.classList.remove('hidden');
+                descText.innerText = "Support Teacher (Yordamchi o'qituvchi) - darsda o'qituvchiga ko'maklashadi, o'quvchilar savollariga javob beradi va xonalar tartibini saqlaydi.";
+            } else if (session.role === 'teacher') {
+                descCard.classList.remove('hidden');
+                descText.innerText = "O'qituvchi - dars dasturini mukammal o'tish, talabalar bilimini baholash va darsdagi supportlarga topshiriq yuklash uchun mas'ul.";
+            } else if (session.role === 'volunteer') {
+                descCard.classList.remove('hidden');
+                descText.innerText = "Volontyor - o'quv markazimizning faol va fidoyi yordamchisi. U markazdagi tadbirlarni tashkil etishda, dars jarayonlariga ko'maklashishda va jamoat ishlarida qatnashadi.";
+            } else {
+                descCard.classList.add('hidden');
+            }
+
+            // Mobile navigatsiya roli
+            const roleBadgeMob = document.getElementById('roleBadgeMobile');
+            roleBadgeMob.innerText = session.role === 'boss' ? 'Boshliq' : (session.role === 'support' ? 'Support' : (session.role === 'teacher' ? 'O\'qituvchi' : 'Volontyor'));
+            roleBadgeMob.className = `text-[10px] px-2 py-0.5 rounded-full font-bold ${session.role === 'boss' ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`;
+
+            const mainBadge = document.getElementById('roleBadge');
+            mainBadge.innerText = session.role === 'boss' ? 'Boshliq' : (session.role === 'support' ? 'Support' : (session.role === 'teacher' ? 'O\'qituvchi' : 'Volontyor'));
+
+            generateNavigation();
+            switchTab('dashboard');
+            
+            // Rollarga mos ravishda xavfsizlik va menyularni ochish/yopish
+            if(session.role === 'boss') {
+                document.getElementById('bossScheduleAction').classList.remove('hidden');
+                document.getElementById('schedActionHead').classList.remove('hidden');
+                document.getElementById('dailyTaskCreatorBox').classList.remove('hidden');
+                document.getElementById('assignTaskModule').classList.remove('hidden');
+                document.getElementById('receivedComplaintsBox').classList.remove('hidden');
+                document.getElementById('sendComplaintBox').classList.add('hidden');
+            } else if(session.role === 'teacher') {
+                document.getElementById('bossScheduleAction').classList.add('hidden');
+                document.getElementById('schedActionHead').classList.add('hidden');
+                document.getElementById('dailyTaskCreatorBox').classList.add('hidden');
+                document.getElementById('assignTaskModule').classList.remove('hidden');
+                document.getElementById('receivedComplaintsBox').classList.add('hidden');
+                document.getElementById('sendComplaintBox').classList.remove('hidden');
+            } else {
+                // Supportlar va Volontyorlar uchun
+                document.getElementById('bossScheduleAction').classList.add('hidden');
+                document.getElementById('schedActionHead').classList.add('hidden');
+                document.getElementById('assignTaskModule').classList.add('hidden');
+            }
+
+            // Volontyorlar o'z jamoasidan boshqani ko'rmasligi shartligi uchun sarlavhalarni sozlash
+            if (session.role === 'volunteer') {
+                document.getElementById('teamTabHeaderTitle').innerText = "Volontyorlar Jamoasi";
+                document.getElementById('teamTabHeaderSubtitle').innerText = "Bizning fidoyi jamoa a'zolarimiz";
+                document.getElementById('teamSectionSubTitle').innerText = "Volontyorlar ro'yxati";
+            } else {
+                document.getElementById('teamTabHeaderTitle').innerText = "Jamoamiz a'zolari";
+                document.getElementById('teamTabHeaderSubtitle').innerText = "Xodimlarning umumiy katalogi va reyting tizimi";
+                document.getElementById('teamSectionSubTitle').innerText = "Xodimlar katalogi";
+            }
+
+            // Chat kanallarini sozlash va chizish
+            const chatSelector = document.getElementById('chatChannelSelector');
+            if (chatSelector) {
+                chatSelector.innerHTML = '';
+                const channels = [{ id: 'barcha', label: 'Barcha' }];
+                
+                if (session.role === 'boss') {
+                    channels.push({ id: 'teachers', label: 'O\'qituvchilar' });
+                    channels.push({ id: 'supports', label: 'Supportlar' });
+                } else if (session.role === 'teacher') {
+                    channels.push({ id: 'teachers', label: 'O\'qituvchilar' });
+                } else if (session.role === 'support') {
+                    channels.push({ id: 'supports', label: 'Supportlar' });
+                }
+                
+                channels.forEach(ch => {
+                    const isActive = currentChannel === ch.id;
+                    chatSelector.innerHTML += `
+                        <button id="chat-tab-${ch.id}" onclick="setChatChannel('${ch.id}')" class="chat-tab flex-1 py-1 text-[10px] font-bold rounded-lg transition duration-150 ${isActive ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400 hover:text-slate-200'}">
+                            ${ch.label}
+                        </button>
+                    `;
+                });
+                
+                if (!channels.find(ch => ch.id === currentChannel)) {
+                    currentChannel = 'barcha';
+                }
+            }
+
+            renderDashboardData();
+            renderTasksData();
+            renderTeamSection();
+            renderComplaintsSection();
+            renderManagementUsers();
+
+            // Sozlamalar inputlariga joriy ma'lumotlarni qo'yish
+            document.getElementById('settingsName').value = session.name;
+            document.getElementById('currentStatusBadge').innerText = session.status || "Kutilmoqda...";
+        }
+
+        // Chat kanalini almashtirish funksiyasi
+        function setChatChannel(channel) {
+            currentChannel = channel;
+            document.querySelectorAll('.chat-tab').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white');
+                btn.classList.add('bg-slate-900', 'text-slate-400');
+            });
+            const activeTab = document.getElementById(`chat-tab-${channel}`);
+            if (activeTab) {
+                activeTab.classList.remove('bg-slate-900', 'text-slate-400');
+                activeTab.classList.add('bg-blue-600', 'text-white');
+            }
+            renderChat();
+        }
+
+        // ------------------ BUSINESS LOGIC FUNCTIONS ------------------
+
+        // 1. DASHBOARD & LIVE MONITOR
+        function renderDashboardData() {
+            // Live Status Monitor Table
+            const table = document.getElementById('liveStatusTable');
+            table.innerHTML = '';
+            let active = 0;
+
+            Object.keys(db.users).forEach(username => {
+                const user = db.users[username];
+                if(user.role === 'boss') return;
+
+                active++;
+                const status = user.status || "Belgilanmagan";
+                const score = user.score || 80;
+
+                let roleName = 'Support Teacher';
+                if(user.role === 'teacher') roleName = 'O\'qituvchi';
+                if(user.role === 'volunteer') roleName = 'Volontyor';
+
+                table.innerHTML += `
+                    <tr class="hover:bg-slate-900 transition">
+                        <td class="py-3 font-medium flex items-center gap-2 px-2">
+                            <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-300">
+                                ${user.name.charAt(0)}
+                            </div>
+                            <span class="text-white">${user.name}</span>
+                        </td>
+                        <td class="py-3 text-slate-400 text-xs px-2">${roleName}</td>
+                        <td class="py-3 px-2">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-950 border border-slate-800 text-emerald-400">
+                                ${status}
+                            </span>
+                        </td>
+                        <td class="py-3 text-xs text-slate-500 px-2">${user.lastSeen || 'Hozir'}</td>
+                        <td class="py-3 text-center px-2">
+                            <span class="font-mono text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded">${score}</span>
+                        </td>
+                    </tr>
+                `;
+            });
+            document.getElementById('activeStaffCount').innerText = `${active} ta faol a'zo`;
+
+            // Class Schedule Table
+            renderScheduleTable();
+            renderChat();
+        }
+
+        // 2. DARSLAR JADVALI (Biriktirish & O'chirish)
+        function renderScheduleTable() {
+            const tableBody = document.getElementById('scheduleTableBody');
+            tableBody.innerHTML = '';
+
+            db.schedule.forEach(item => {
+                const teacherName = db.users[item.teacher] ? db.users[item.teacher].name : "Mavjud emas";
+                const supportName = db.users[item.support] ? db.users[item.support].name : "Mavjud emas";
+
+                const actionTd = session.role === 'boss' 
+                    ? `<td class="py-3 text-center"><button onclick="deleteSchedule(${item.id})" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-trash"></i></button></td>`
+                    : '';
+
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-slate-900 transition text-xs">
+                        <td class="py-3 font-bold text-slate-200">${item.className}</td>
+                        <td class="py-3 text-slate-300">${teacherName}</td>
+                        <td class="py-3 text-slate-300"><span class="px-2 py-1 rounded bg-slate-950 border border-slate-800 text-blue-400">${supportName}</span></td>
+                        <td class="py-3 text-slate-400">${item.time}</td>
+                        ${actionTd}
+                    </tr>
+                `;
+            });
+
+            // Agar o'quvchi / support / volontyor bo'lsa boshliq amallari ustunini yashirish
+            if(session.role !== 'boss') {
+                document.getElementById('schedActionHead').classList.add('hidden');
+            } else {
+                document.getElementById('schedActionHead').classList.remove('hidden');
+            }
+        }
+
+        function toggleScheduleForm() {
+            const form = document.getElementById('scheduleForm');
+            form.classList.toggle('hidden');
+
+            if(!form.classList.contains('hidden')) {
+                // Select variantlarini to'ldirish
+                const teachSelect = document.getElementById('schedTeacher');
+                const suppSelect = document.getElementById('schedSupport');
+                teachSelect.innerHTML = '';
+                suppSelect.innerHTML = '';
+
+                Object.keys(db.users).forEach(key => {
+                    const u = db.users[key];
+                    if(u.role === 'teacher') {
+                        teachSelect.innerHTML += `<option value="${key}">${u.name}</option>`;
+                    } else if(u.role === 'support') {
+                        suppSelect.innerHTML += `<option value="${key}">${u.name}</option>`;
+                    }
+                });
+            }
+        }
+
+        function saveSchedule() {
+            const guruh = document.getElementById('schedClass').value.trim();
+            const teacher = document.getElementById('schedTeacher').value;
+            const support = document.getElementById('schedSupport').value;
+            const vaqt = document.getElementById('schedTime').value.trim();
+
+            if(!guruh || !vaqt) return showNotification("Barcha maydonlarni to'ldiring!", "error");
+
+            db.schedule.push({
+                id: Date.now(),
+                className: guruh,
+                teacher: teacher,
+                support: support,
+                time: vaqt
+            });
+
+            saveDB();
+            renderScheduleTable();
+            toggleScheduleForm();
+            
+            document.getElementById('schedClass').value = '';
+            document.getElementById('schedTime').value = '';
+            showNotification("Yangi dars jadvali muvaffaqiyatli saqlandi!");
+        }
+
+        function deleteSchedule(id) {
+            db.schedule = db.schedule.filter(s => s.id !== id);
+            saveDB();
+            renderScheduleTable();
+            showNotification("Dars jadvali o'chirildi.", "info");
+        }
+
+        // 3. HOLATNI BELGILASH (Support & Volunteer panel)
+        function changeStatus(newStatus) {
+            db.users[session.username].status = newStatus;
+            const now = new Date();
+            db.users[session.username].lastSeen = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            db.users[session.username].score = Math.min((db.users[session.username].score || 80) + 2, 100);
+
+            saveDB();
+            document.getElementById('currentStatusBadge').innerText = newStatus;
+            showNotification("Sizning holatingiz yangilandi: " + newStatus);
+            renderDashboardData();
+        }
+
+        function submitCustomStatus() {
+            const val = document.getElementById('customStatusInput').value.trim();
+            if(!val) return showNotification("Iltimos statusni yozing!", "error");
+
+            changeStatus(val);
+            document.getElementById('customStatusInput').value = '';
+        }
+
+        // 4. TOPSHIRIQLAR & VAZIFALAR
+        function renderTasksData() {
+            // Dropdown filterlar (Topshiriq yuborish) - Supportlarga yoki barcha supportlarga
+            const select = document.getElementById('taskTarget');
+            if(select) {
+                select.innerHTML = `<option value="all">Barcha Support jamoasiga</option>`;
+                Object.keys(db.users).forEach(key => {
+                    if(db.users[key].role === 'support') {
+                        select.innerHTML += `<option value="${key}">${db.users[key].name} (Support)</option>`;
+                    }
+                });
+            }
+
+            // 1. Kunlik vazifalar
+            const dailyContainer = document.getElementById('dailyTasksList');
+            dailyContainer.innerHTML = '';
+            db.dailyTasks.forEach(task => {
+                const isDone = task.completedBy.includes(session.username);
+                const isEligibleToComplete = (session.role === 'support' || session.role === 'volunteer');
+                
+                const buttonHtml = (isEligibleToComplete && !isDone) 
+                    ? `<button onclick="completeDailyTask(${task.id})" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 rounded text-[10px] font-bold text-white transition">Bajarildi</button>`
+                    : (isDone ? `<span class="text-emerald-400 font-bold text-[10px]"><i class="fa-solid fa-check"></i> Bajarilgan</span>` : '');
+                
+                const deleteButton = (session.role === 'boss') 
+                    ? `<button onclick="deleteDailyTask(${task.id})" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can"></i></button>`
+                    : '';
+
+                dailyContainer.innerHTML += `
+                    <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <h4 class="font-bold text-slate-200">${task.title}</h4>
+                            <p class="text-slate-500 text-[11px]">${task.desc}</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${buttonHtml}
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // 2. Maxsus topsiriqlar
+            const customContainer = document.getElementById('customTasksList');
+            customContainer.innerHTML = '';
+
+            // Hamma topsiriqlar yoki faqat o'ziga biriktirilganlar
+            const myCustomTasks = db.tasks.filter(t => session.role === 'boss' || t.target === 'all' || t.target === session.username);
+
+            if(myCustomTasks.length === 0) {
+                customContainer.innerHTML = `<p class="text-slate-600 text-xs py-2">Maxsus topshiriqlar mavjud emas.</p>`;
+                return;
+            }
+
+            myCustomTasks.forEach(task => {
+                const isDone = task.doneBy.includes(session.username);
+                const creatorName = db.users[task.creator] ? db.users[task.creator].name : "Tizim";
+                
+                const buttonHtml = (session.role === 'support' && !isDone) 
+                    ? `<button onclick="completeCustomTask(${task.id})" class="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 rounded text-[10px] font-bold text-white transition">Bajarildi</button>`
+                    : (isDone ? `<span class="text-emerald-400 font-bold text-[10px]"><i class="fa-solid fa-check"></i> Bajarilgan</span>` : '');
+
+                const deleteButton = (session.role === 'boss' || session.username === task.creator) 
+                    ? `<button onclick="deleteCustomTask(${task.id})" class="text-red-400 hover:text-red-600 transition"><i class="fa-solid fa-trash-can"></i></button>`
+                    : '';
+
+                customContainer.innerHTML += `
+                    <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-200">${task.content}</p>
+                            <span class="text-[9px] text-slate-500 uppercase tracking-wider block mt-1">Kimdan: ${creatorName} (${task.creatorRole})</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            ${buttonHtml}
+                            ${deleteButton}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // Kunlik vazifa qo'shish (FAQAT BOSHLIQ)
+        function addDailyTask() {
+            const title = document.getElementById('dailyTaskTitle').value.trim();
+            const desc = document.getElementById('dailyTaskDesc').value.trim();
+
+            if(!title || !desc) return showNotification("Barcha maydonlarni to'ldiring!", "error");
+
+            db.dailyTasks.push({
+                id: Date.now(),
+                title: title,
+                desc: desc,
+                completedBy: []
+            });
+
+            saveDB();
+            renderTasksData();
+            document.getElementById('dailyTaskTitle').value = '';
+            document.getElementById('dailyTaskDesc').value = '';
+            showNotification("Kunlik vazifa kiritildi!");
+        }
+
+        function deleteDailyTask(id) {
+            db.dailyTasks = db.dailyTasks.filter(t => t.id !== id);
+            saveDB();
+            renderTasksData();
+            showNotification("Kunlik vazifa o'chirildi.", "info");
+        }
+
+        // Maxsus topshiriq qo'shish (O'qituvchi va Boshliq)
+        function assignTask() {
+            const target = document.getElementById('taskTarget').value;
+            const content = document.getElementById('taskContent').value.trim();
+
+            if(!content) return showNotification("Topsiriq mazmunini kiriting!", "error");
+
+            db.tasks.push({
+                id: Date.now(),
+                creator: session.username,
+                creatorRole: session.role,
+                target: target,
+                content: content,
+                doneBy: []
+            });
+
+            saveDB();
+            renderTasksData();
+            document.getElementById('taskContent').value = '';
+            showNotification("Topshiriq muvaffaqiyatli yuborildi!");
+            document.getElementById('pingSound').play().catch(()=>{});
+        }
+
+        function deleteCustomTask(id) {
+            db.tasks = db.tasks.filter(t => t.id !== id);
+            saveDB();
+            renderTasksData();
+            showNotification("Maxsus topshiriq o'chirildi.", "info");
+        }
+
+        function completeDailyTask(id) {
+            const task = db.dailyTasks.find(t => t.id === id);
+            if(task && !task.completedBy.includes(session.username)) {
+                task.completedBy.push(session.username);
+                db.users[session.username].score = Math.min((db.users[session.username].score || 80) + 5, 100);
+                saveDB();
+                renderTasksData();
+                showNotification("Vazifani bajarganingiz tasdiqlandi. Rahmat!");
+            }
+        }
+
+        function completeCustomTask(id) {
+            const task = db.tasks.find(t => t.id === id);
+            if(task && !task.doneBy.includes(session.username)) {
+                task.doneBy.push(session.username);
+                db.users[session.username].score = Math.min((db.users[session.username].score || 80) + 10, 100);
+                saveDB();
+                renderTasksData();
+                showNotification("Maxsus topshiriqni yakunladingiz!");
+            }
+        }
+
+        // 5. JAMOANI KO'RSATISH SECTION (Volontyorlar faqat volontyorlarni, boshqalar barcha guruhni ko'ra oladi)
+        function renderTeamSection() {
+            const grid = document.getElementById('teamCardsGrid');
+            grid.innerHTML = '';
+
+            Object.keys(db.users).forEach(key => {
+                const u = db.users[key];
+                
+                // Qoida: Volontyor faqat o'zining volontyorlar jamoasini ko'ra oladi
+                if (session.role === 'volunteer' && u.role !== 'volunteer') {
+                    return; 
+                }
+
+                if(u.role === 'boss') return; // Boshliq o'zini jamoa ro'yxatida ko'rsatmaydi
+
+                let roleBadge = '';
+                if(u.role === 'support') {
+                    roleBadge = `<span class="bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">SUPPORT TEACHER</span>`;
+                } else if(u.role === 'teacher') {
+                    roleBadge = `<span class="bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">O'QITUVCHI</span>`;
+                } else if(u.role === 'volunteer') {
+                    roleBadge = `<span class="bg-purple-500/10 text-purple-400 border border-purple-500/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">VOLONTYOR</span>`;
+                }
+
+                const score = u.score || 80;
+                const status = u.status || "Kutilmoqda";
+
+                grid.innerHTML += `
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-slate-900 border border-slate-800 rounded-xl flex items-center justify-center text-md font-bold text-slate-300">
+                                ${u.name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-white text-sm">${u.name}</h4>
+                                ${roleBadge}
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-400 space-y-1">
+                            <p><span class="text-slate-500">Hozirgi mashg'uloti:</span> <span class="text-slate-200">${status}</span></p>
+                            <p><span class="text-slate-500">Reyting (KPI):</span> <span class="font-bold text-emerald-400">${score} ball</span></p>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // 5.2 XODIMLAR RO'YXATI VA PAROLLARI (FAQAT BOSHLIQ UCHUN)
+        function renderManagementUsers() {
+            const tableBody = document.getElementById('managementUsersTable');
+            if(!tableBody) return;
+            tableBody.innerHTML = '';
+
+            Object.keys(db.users).forEach(username => {
+                const u = db.users[username];
+                
+                // Rollarni o'zgartirish select komponenti
+                const roles = ['boss', 'support', 'teacher', 'volunteer'];
+                let roleSelectHtml = `<select onchange="updateUserRole('${username}', this.value)" class="bg-slate-950 border border-slate-800 text-slate-300 rounded px-2 py-1 focus:outline-none">`;
+                roles.forEach(r => {
+                    const selected = u.role === r ? 'selected' : '';
+                    let rLabel = r === 'boss' ? 'Boshliq' : (r === 'support' ? 'Support' : (r === 'teacher' ? 'O\'qituvchi' : 'Volontyor'));
+                    roleSelectHtml += `<option value="${r}" ${selected}>${rLabel}</option>`;
+                });
+                roleSelectHtml += `</select>`;
+
+                // Login va parol tahrirlash inputlari
+                tableBody.innerHTML += `
+                    <tr class="hover:bg-slate-900 transition text-xs">
+                        <td class="py-3 px-2">
+                            <input type="text" value="${u.name}" onchange="updateUserField('${username}', 'name', this.value)" class="bg-slate-950 border border-slate-800 text-white rounded px-2 py-1 focus:outline-none w-full max-w-[150px]">
+                        </td>
+                        <td class="py-3 px-2 font-mono text-slate-300">${username}</td>
+                        <td class="py-3 px-2">
+                            <input type="text" value="${u.password}" onchange="updateUserField('${username}', 'password', this.value)" class="bg-slate-950 border border-slate-800 text-white rounded px-2 py-1 focus:outline-none font-mono w-full max-w-[100px]">
+                        </td>
+                        <td class="py-3 px-2">
+                            ${roleSelectHtml}
+                        </td>
+                        <td class="py-3 px-2 text-center flex items-center justify-center gap-2">
+                            <button onclick="deleteUser('${username}')" class="text-red-400 hover:text-red-600 transition p-1.5 bg-red-600/10 rounded-lg hover:bg-red-600/20" title="Xodimni o'chirish">
+                                <i class="fa-solid fa-user-slash"></i> O'chirish
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Boshliq tomonidan xodim ma'lumotlarini to'g'ridan-to'g'ri yangilash
+        function updateUserField(username, field, value) {
+            const val = value.trim();
+            if(!val) return showNotification("Bo'sh qiymat kiritib bo'lmaydi!", "error");
+            
+            db.users[username][field] = val;
+            saveDB();
+            showNotification(`[${username}] xodimning ${field} tahrirlandi.`);
+            
+            // Agar joriy foydalanuvchi tahrirlangan bo'lsa sessiyani yangilash
+            if(session && session.username === username) {
+                setupInterface();
+            } else {
+                renderDashboardData();
+                renderTeamSection();
+            }
+        }
+
+        function updateUserRole(username, newRole) {
+            db.users[username].role = newRole;
+            saveDB();
+            showNotification(`[${username}] xodimning roli ${newRole} qilib o'zgartirildi.`);
+            
+            if(session && session.username === username) {
+                setupInterface();
+            } else {
+                renderDashboardData();
+                renderTeamSection();
+            }
+        }
+
+        // Yangi xodim qo'shishda logini kichik harf qilinishini ta'minlash
+        function createUser() {
+            const name = document.getElementById('newRealName').value.trim();
+            const username = document.getElementById('newUsername').value.trim().toLowerCase(); // LOWERCASE xavfsizligi
+            const pass = document.getElementById('newPassword').value.trim();
+            const role = document.getElementById('newRole').value;
+
+            if(!name || !username || !pass) return showNotification("Iltimos, barcha ma'lumotlarni kiriting!", "error");
+            if(db.users[username]) return showNotification("Ushbu login tizimda allaqachon mavjud!", "error");
+
+            db.users[username] = {
+                password: pass,
+                name: name,
+                role: role,
+                status: "Kutilmoqda...",
+                lastSeen: "Hozir",
+                score: 100
+            };
+
+            saveDB();
+            renderManagementUsers();
+            renderTeamSection();
+            renderDashboardData();
+            
+            document.getElementById('newRealName').value = '';
+            document.getElementById('newUsername').value = '';
+            document.getElementById('newPassword').value = '';
+            showNotification("Yangi xodim tizimga muvaffaqiyatli qo'shildi!");
+        }
+
+        // Xodimni o'chirish
+        function deleteUser(username) {
+            if(username === 'admin') return showNotification("Tizim asoschisining hisobini o'chirib bo'lmaydi!", "error");
+            
+            if(confirm(`Haqiqatan ham [${username}] xodimni tizimdan o'chirmoqchimisiz?`)) {
+                delete db.users[username];
+                saveDB();
+                renderManagementUsers();
+                renderTeamSection();
+                renderDashboardData();
+                showNotification("Xodim tizimdan o'chirildi.", "info");
+            }
+        }
+
+        // 6. SHIKOYATLAR VA MUROJAATLAR SECTION
+        function renderComplaintsSection() {
+            const list = document.getElementById('complaintsListContainer');
+            if(!list) return;
+            list.innerHTML = '';
+
+            if(db.complaints.length === 0) {
+                list.innerHTML = `<p class="text-slate-600 py-3 text-xs">Hech qanday murojaatlar mavjud emas.</p>`;
+                return;
+            }
+
+            db.complaints.forEach(item => {
+                const isRead = item.status === 'read';
+                const actionButton = !isRead 
+                    ? `<button onclick="markComplaintAsRead(${item.id})" class="px-2 py-1 bg-blue-600 hover:bg-blue-700 rounded text-[10px] font-bold text-white transition">Ko'rib chiqildi</button>`
+                    : `<span class="text-slate-500 text-[10px] italic">Ko'rib chiqilgan</span>`;
+
+                list.innerHTML += `
+                    <div class="p-4 bg-slate-950 rounded-xl border ${isRead ? 'border-slate-900 opacity-60' : 'border-red-500/10'} flex justify-between items-start">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="font-bold text-white">${item.senderName}</span>
+                                <span class="text-[9px] text-slate-500">${item.time}</span>
+                            </div>
+                            <p class="text-slate-300">${item.message}</p>
+                        </div>
+                        <div>
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function sendComplaint() {
+            const msg = document.getElementById('complaintText').value.trim();
+            if(!msg) return showNotification("Iltimos murojaat matnini yozing!", "error");
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            db.complaints.push({
+                id: Date.now(),
+                sender: session.username,
+                senderName: session.name,
+                message: msg,
+                time: timeStr,
+                status: 'unread'
+            });
+
+            saveDB();
+            document.getElementById('complaintText').value = '';
+            showNotification("Murojaatingiz to'g'ridan-to'g'ri boshliqqa muvaffaqiyatli yetkazildi!");
+            renderComplaintsSection();
+        }
+
+        function markComplaintAsRead(id) {
+            const comp = db.complaints.find(c => c.id === id);
+            if(comp) {
+                comp.status = 'read';
+                saveDB();
+                renderComplaintsSection();
+                showNotification("Murojaat ko'rib chiqildi deb belgilandi.");
+            }
+        }
+
+        // 7. JONLI CHAT FUNKSIYALARI
+        function renderChat() {
+            const container = document.getElementById('chatMessages');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const activeMessages = db.chats[currentChannel] || [];
+
+            activeMessages.forEach(msg => {
+                const isMe = msg.sender === session.username;
+                container.innerHTML += `
+                    <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
+                        <div class="text-[10px] text-slate-500 mb-0.5 px-1 font-semibold">${msg.name}</div>
+                        <div class="max-w-[85%] rounded-2xl p-2.5 text-[11px] ${isMe ? 'bg-blue-600 text-white rounded-tr-none' : 'bg-slate-800 text-slate-200 rounded-tl-none'} shadow-md">
+                            ${msg.msg ? `<p class="leading-relaxed break-words">${msg.msg}</p>` : ''}
+                            ${msg.img ? `<img src="${msg.img}" class="mt-2 rounded-lg max-h-40 object-cover cursor-pointer w-full" onclick="window.open('${msg.img}')">` : ''}
+                            <div class="text-[9px] ${isMe ? 'text-blue-200' : 'text-slate-400'} text-right mt-1">${msg.time}</div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    selectedImageBase64 = e.target.result;
+                    document.getElementById('imagePreview').src = selectedImageBase64;
+                    document.getElementById('imagePreviewContainer').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function clearImagePreview() {
+            selectedImageBase64 = null;
+            document.getElementById('chatFileInput').value = '';
+            document.getElementById('imagePreviewContainer').classList.add('hidden');
+        }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const msgText = input.value.trim();
+            
+            if(!msgText && !selectedImageBase64) return;
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            if (!db.chats[currentChannel]) {
+                db.chats[currentChannel] = [];
+            }
+
+            db.chats[currentChannel].push({
+                sender: session.username,
+                name: session.name,
+                msg: msgText || null,
+                img: selectedImageBase64 || null,
+                time: timeStr
+            });
+
+            saveDB();
+            input.value = '';
+            clearImagePreview();
+            renderChat();
+        }
+
+        // 8. SOZLAMALARNI SAQLASH (XATOLIKLAR BUTUNLAY TUZATILDI)
+        function saveSettings() {
+            const newName = document.getElementById('settingsName').value.trim();
+            const newPass = document.getElementById('settingsPass').value.trim();
+
+            if(!newName) return showNotification("Ismingizni bo'sh qoldira olmaysiz!", "error");
+
+            // 1. Bazadagi joriy username bo'yicha ma'lumotlarni yangilash
+            db.users[session.username].name = newName;
+            
+            // 2. Parolni o'zgartirish talab qilingan bo'lsa
+            if(newPass) {
+                db.users[session.username].password = newPass;
+            }
+
+            // 3. O'zgarishlarni saqlash va joriy session xotirasini yangilash
+            saveDB();
+            
+            // Mahalliy session obyektini yangilaymiz
+            session.name = newName;
+            if(newPass) {
+                session.password = newPass;
+            }
+
+            setupInterface();
+            document.getElementById('settingsPass').value = '';
+            showNotification("Profil sozlamalari yangilandi!");
+        }
+
+        // AUTO-POLLING SIMULATION FOR REAL-TIME EXPERIENCE
+        setInterval(() => {
+            if (session) {
+                db = JSON.parse(localStorage.getItem('mit_pro_db')) || db;
+                renderDashboardData();
+                renderTasksData();
+                renderComplaintsSection();
+            }
+        }, 4000);
+    </script>
+</body>
+</html>
